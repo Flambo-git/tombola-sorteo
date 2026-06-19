@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tómbola Flambo</title>
+
+<style>
+
+*{
+    box-sizing:border-box;
+}
+
+body{
+    margin:0;
+    background:#F6F0E5;
+    font-family:Arial,sans-serif;
+    color:#5C1D10;
+}
+
+.contenedor{
+    max-width:480px;
+    margin:auto;
+    padding:20px 15px 40px;
+}
+
+.ruleta{
+    display:flex;
+    justify-content:center;
+    margin-bottom:20px;
+}
+
+canvas{
+    width:100%;
+    max-width:420px;
+    height:auto;
+    background:#FFFDF8;
+    border-radius:30px;
+    box-shadow:0 10px 35px rgba(0,0,0,.15);
+}
+
+.panel{
+    background:white;
+    border-radius:20px;
+    padding:20px;
+    box-shadow:0 10px 30px rgba(0,0,0,.12);
+}
+
+h1{
+    margin-top:0;
+    margin-bottom:10px;
+    text-align:center;
+    color:#C73D1C;
+}
+
+.descripcion{
+    text-align:center;
+    color:#7A4A35;
+    margin-bottom:20px;
+}
+
+.lista-participante{
+    display:flex;
+    gap:10px;
+    margin-bottom:10px;
+}
+
+.lista-participante input{
+    flex:1;
+    padding:14px;
+    border:2px solid #E9D9BF;
+    border-radius:12px;
+    background:#FFFDF8;
+    color:#5C1D10;
+    font-size:15px;
+}
+
+.lista-participante input:focus{
+    outline:none;
+    border-color:#E87722;
+}
+
+.eliminar{
+    width:50px;
+    border:none;
+    border-radius:12px;
+    background:#C73D1C;
+    color:white;
+    font-size:20px;
+}
+
+.boton-secundario{
+    width:100%;
+    padding:16px;
+    margin-top:10px;
+    border:none;
+    border-radius:15px;
+    background:#3E6B43;
+    color:white;
+    font-size:18px;
+    font-weight:bold;
+}
+
+.boton-principal{
+    width:100%;
+    padding:18px;
+    margin-top:15px;
+    border:none;
+    border-radius:15px;
+    background:#E87722;
+    color:white;
+    font-size:20px;
+    font-weight:bold;
+}
+
+.ganador{
+    margin-top:20px;
+    padding:20px;
+    border-radius:15px;
+    background:#F8F3EA;
+    color:#3E6B43;
+    text-align:center;
+    font-size:28px;
+    font-weight:bold;
+}
+
+</style>
+</head>
+<body>
+
+<div class="contenedor">
+
+    <div class="ruleta">
+        <canvas id="canvas" width="500" height="500"></canvas>
+    </div>
+
+    <div class="panel">
+
+        <h1>🎲 Tómbola Flambo</h1>
+
+        <div class="descripcion">
+            Participantes
+        </div>
+
+        <div id="participantes"></div>
+
+        <button class="boton-secundario" onclick="agregarParticipante()">
+            + Agregar participante
+        </button>
+
+        <button class="boton-principal" onclick="sortear()">
+            GIRAR TÓMBOLA
+        </button>
+
+        <div class="ganador" id="ganador"></div>
+
+    </div>
+
+</div>
+
+<script>
+
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+let angulo = 0;
+let velocidad = 0;
+let girando = false;
+let sectores = [];
+
+const colores = [
+"#E87722",
+"#C73D1C",
+"#3E6B43",
+"#F0B64A",
+"#D95E18"
+];
+
+const nombresIniciales = [
+"Arely Ortegón",
+"Randy Ocampo",
+"José Carrillo Chí",
+"Rafael Bcp",
+"Daniel Pérez",
+"Dafdi Cam",
+"Andy Salazar",
+"Katia Quijano",
+"Verónica Escalante",
+"Jaque Nh",
+"Rodrigo Uc",
+"Francisco PM",
+"José Espinosa Officer",
+"Iris Briceño",
+"Sánchez Godoy",
+"José Chan",
+"Rebeca Del P ZC",
+"Fernando Uc",
+"Daniela Coyoc",
+"Ivan Jimenez"
+];
+
+function agregarParticipante(nombre=""){
+
+    const fila = document.createElement("div");
+    fila.className = "lista-participante";
+
+    fila.innerHTML = `
+        <input type="text" value="${nombre}">
+        <button class="eliminar">✕</button>
+    `;
+
+    fila.querySelector(".eliminar").onclick = () => {
+        fila.remove();
+    };
+
+    document.getElementById("participantes").appendChild(fila);
+
+}
+
+function dibujar(){
+
+    ctx.clearRect(0,0,500,500);
+
+    const cx = 250;
+    const cy = 250;
+    const radio = 190;
+
+    if(sectores.length){
+
+        for(let i=0;i<sectores.length;i++){
+
+            const inicio = angulo + i*(2*Math.PI/sectores.length);
+            const fin = inicio + (2*Math.PI/sectores.length);
+
+            ctx.beginPath();
+            ctx.moveTo(cx,cy);
+            ctx.arc(cx,cy,radio,inicio,fin);
+            ctx.closePath();
+
+            ctx.fillStyle = colores[i % colores.length];
+            ctx.fill();
+
+            ctx.strokeStyle = "#FFFDF8";
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.save();
+
+            ctx.translate(cx,cy);
+            ctx.rotate((inicio+fin)/2);
+
+            ctx.fillStyle = "white";
+            ctx.font = "bold 11px Arial";
+            ctx.textAlign = "right";
+
+            ctx.fillText(
+                sectores[i],
+                radio-15,
+                4
+            );
+
+            ctx.restore();
+
+        }
+    }
+
+    ctx.beginPath();
+    ctx.arc(cx,cy,200,0,2*Math.PI);
+    ctx.strokeStyle="#5C1D10";
+    ctx.lineWidth=8;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(cx,cy,35,0,2*Math.PI);
+    ctx.fillStyle="#5C1D10";
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(cx,cy,12,0,2*Math.PI);
+    ctx.fillStyle="#F0B64A";
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(cx,20);
+    ctx.lineTo(cx-18,55);
+    ctx.lineTo(cx+18,55);
+    ctx.closePath();
+
+    ctx.fillStyle="#C73D1C";
+    ctx.fill();
+
+}
+
+function animar(){
+
+    if(girando){
+
+        angulo += velocidad;
+        velocidad *= 0.985;
+
+        if(velocidad < 0.002){
+
+            girando = false;
+
+            const paso = 2*Math.PI/sectores.length;
+
+            const indice = Math.floor(
+                (
+                    ((3*Math.PI/2-angulo)%(2*Math.PI)+2*Math.PI)
+                    %(2*Math.PI)
+                ) / paso
+            );
+
+            document.getElementById("ganador").innerHTML =
+                "🏆<br>" + sectores[indice];
+
+        }
+
+    }
+
+    dibujar();
+
+    requestAnimationFrame(animar);
+
+}
+
+function sortear(){
+
+    sectores = [];
+
+    document.querySelectorAll("#participantes input")
+    .forEach(campo => {
+
+        const nombre = campo.value.trim();
+
+        if(nombre !== "")
+            sectores.push(nombre);
+
+    });
+
+    if(sectores.length < 2){
+
+        alert("Debe haber al menos dos participantes.");
+        return;
+
+    }
+
+    document.getElementById("ganador").innerHTML = "";
+
+    velocidad = 0.35 + Math.random()*0.15;
+
+    girando = true;
+
+}
+
+nombresIniciales.forEach(nombre => agregarParticipante(nombre));
+
+animar();
+
+</script>
+
+</body>
+</html>
